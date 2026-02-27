@@ -169,3 +169,86 @@ class TestAdbDeviceManager:
                 AdbDeviceManager(device_name=None, exit_on_error=True)
 
             mock_exit.assert_called_once_with(1)
+
+    @patch('adbdevicemanager.AdbDeviceManager.check_adb_installed')
+    @patch('adbdevicemanager.AdbDeviceManager.get_available_devices')
+    @patch('adbdevicemanager.AdbClient')
+    def test_launch_app_default_uses_monkey(self, mock_adb_client, mock_get_devices, mock_check_adb):
+        """Test app launch using package default launcher."""
+        mock_check_adb.return_value = True
+        mock_get_devices.return_value = ["device123"]
+        mock_device = MagicMock()
+        mock_device.shell.return_value = "Events injected: 1"
+        mock_adb_client.return_value.device.return_value = mock_device
+
+        manager = AdbDeviceManager(device_name=None, exit_on_error=False)
+        output = manager.launch_app("com.example.app")
+
+        mock_device.shell.assert_called_with(
+            "monkey -p com.example.app -c android.intent.category.LAUNCHER 1"
+        )
+        assert "Events injected: 1" in output
+
+    @patch('adbdevicemanager.AdbDeviceManager.check_adb_installed')
+    @patch('adbdevicemanager.AdbDeviceManager.get_available_devices')
+    @patch('adbdevicemanager.AdbClient')
+    def test_hot_reload_writes_command_to_stdin(self, mock_adb_client, mock_get_devices, mock_check_adb):
+        """Test hot reload command is sent to running flutter process."""
+        mock_check_adb.return_value = True
+        mock_get_devices.return_value = ["device123"]
+        mock_device = MagicMock()
+        mock_adb_client.return_value.device.return_value = mock_device
+
+        manager = AdbDeviceManager(device_name=None, exit_on_error=False)
+        mock_process = MagicMock()
+        mock_process.poll.return_value = None
+        mock_process.stdin = MagicMock()
+        manager.flutter_process = mock_process
+
+        result = manager.hot_reload_flutter_run()
+
+        mock_process.stdin.write.assert_called_once_with("r\n")
+        mock_process.stdin.flush.assert_called_once()
+        assert "Hot reload command sent" in result
+
+    @patch('adbdevicemanager.time.sleep')
+    @patch('adbdevicemanager.subprocess.Popen')
+    @patch('adbdevicemanager.shutil.which')
+    @patch('adbdevicemanager.AdbDeviceManager.check_adb_installed')
+    @patch('adbdevicemanager.AdbDeviceManager.get_available_devices')
+    @patch('adbdevicemanager.AdbClient')
+    def test_start_flutter_run_starts_process(
+        self,
+        mock_adb_client,
+        mock_get_devices,
+        mock_check_adb,
+        mock_which,
+        mock_popen,
+        mock_sleep,
+        tmp_path,
+    ):
+        """Test starting managed flutter run process."""
+        mock_check_adb.return_value = True
+        mock_get_devices.return_value = ["device123"]
+        mock_device = MagicMock()
+        mock_adb_client.return_value.device.return_value = mock_device
+        mock_which.return_value = "/usr/bin/flutter"
+
+        mock_proc = MagicMock()
+        mock_proc.poll.return_value = None
+        mock_proc.pid = 999
+        mock_popen.return_value = mock_proc
+
+        manager = AdbDeviceManager(device_name=None, exit_on_error=False)
+        result = manager.start_flutter_run(
+            project_dir=str(tmp_path),
+            target="lib/main.dart",
+            additional_args="--dart-define=FOO=bar",
+            startup_wait_seconds=0,
+        )
+
+        called_command = mock_popen.call_args.args[0]
+        assert called_command[0] == "/usr/bin/flutter"
+        assert called_command[1:4] == ["run", "-d", "device123"]
+        assert "--dart-define=FOO=bar" in called_command
+        assert "Started flutter run" in result

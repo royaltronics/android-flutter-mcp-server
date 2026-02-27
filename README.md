@@ -205,6 +205,54 @@ def get_package_action_intents(package_name: str) -> list[str]:
     """
 ```
 
+```python
+def launch_app(package_name: str, activity_name: str | None = None, stop_first: bool = False) -> str:
+    """
+    Launch an app by package and optional activity.
+    """
+```
+
+```python
+def start_flutter_run(
+    project_dir: str,
+    target: str = "lib/main.dart",
+    flutter_executable: str = "flutter",
+    additional_args: str | None = None,
+    startup_wait_seconds: int = 8,
+) -> str:
+    """
+    Start a managed `flutter run` process for the selected device.
+    """
+```
+
+```python
+def hot_reload_flutter_run() -> str:
+    """
+    Send `r` (hot reload) to the managed flutter run session.
+    """
+```
+
+```python
+def hot_restart_flutter_run() -> str:
+    """
+    Send `R` (hot restart) to the managed flutter run session.
+    """
+```
+
+```python
+def stop_flutter_run(graceful_wait_seconds: int = 10) -> str:
+    """
+    Stop the managed flutter run process.
+    """
+```
+
+```python
+def get_flutter_run_log(lines: int = 60) -> str:
+    """
+    Read tail lines from `.mcp_flutter_run.log`.
+    """
+```
+
 ## Contributing
 
 Contributions are welcome!

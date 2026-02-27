@@ -108,5 +108,95 @@ def get_package_action_intents(package_name: str) -> list[str]:
     return result
 
 
+@mcp.tool()
+def launch_app(package_name: str, activity_name: str | None = None, stop_first: bool = False) -> str:
+    """
+    Launch an Android app on the connected device.
+    Args:
+        package_name (str): Android package name (for example, com.example.app)
+        activity_name (str | None): Optional activity name or full component
+        stop_first (bool): Force-stop the package before launch
+    Returns:
+        str: ADB launch output
+    """
+    return deviceManager.launch_app(
+        package_name=package_name,
+        activity_name=activity_name,
+        stop_first=stop_first,
+    )
+
+
+@mcp.tool()
+def start_flutter_run(
+    project_dir: str,
+    target: str = "lib/main.dart",
+    flutter_executable: str = "flutter",
+    additional_args: str | None = None,
+    startup_wait_seconds: int = 8,
+) -> str:
+    """
+    Start a managed `flutter run` session tied to the selected device.
+    Args:
+        project_dir (str): Flutter project directory on the host machine
+        target (str): Flutter target entrypoint (defaults to lib/main.dart)
+        flutter_executable (str): Flutter binary name/path on host
+        additional_args (str | None): Extra args appended to flutter run
+        startup_wait_seconds (int): Seconds to wait before startup check
+    Returns:
+        str: Startup status and log location
+    """
+    return deviceManager.start_flutter_run(
+        project_dir=project_dir,
+        target=target,
+        flutter_executable=flutter_executable,
+        additional_args=additional_args,
+        startup_wait_seconds=startup_wait_seconds,
+    )
+
+
+@mcp.tool()
+def hot_reload_flutter_run() -> str:
+    """
+    Trigger hot reload for the managed flutter run process.
+    Returns:
+        str: Operation status
+    """
+    return deviceManager.hot_reload_flutter_run()
+
+
+@mcp.tool()
+def hot_restart_flutter_run() -> str:
+    """
+    Trigger hot restart for the managed flutter run process.
+    Returns:
+        str: Operation status
+    """
+    return deviceManager.hot_restart_flutter_run()
+
+
+@mcp.tool()
+def stop_flutter_run(graceful_wait_seconds: int = 10) -> str:
+    """
+    Stop the managed flutter run process started by start_flutter_run.
+    Args:
+        graceful_wait_seconds (int): Wait time before force kill fallback
+    Returns:
+        str: Stop status
+    """
+    return deviceManager.stop_flutter_run(graceful_wait_seconds=graceful_wait_seconds)
+
+
+@mcp.tool()
+def get_flutter_run_log(lines: int = 60) -> str:
+    """
+    Read the tail of the managed flutter run log.
+    Args:
+        lines (int): Number of lines to read from the end of log
+    Returns:
+        str: Log tail
+    """
+    return deviceManager.get_flutter_run_log(lines=lines)
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
